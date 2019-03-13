@@ -255,7 +255,7 @@ int FedReplicaThread::replicate()
 
     bool success = false;
 
-    int last;
+    uint64_t last;
 
     if ( frm->xmlrpc_replicate_log(follower_id, success, last, error) != 0 )
     {
@@ -311,7 +311,7 @@ int HeartBeatThread::replicate()
 	lr.sql = "";
 
 	lr.timestamp = 0;
-    lr.fed_index = -1;
+    lr.fed_index = UINT64_MAX;
 
     rc = raftm->xmlrpc_replicate_log(follower_id, &lr, success, fterm, error);
 

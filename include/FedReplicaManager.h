@@ -80,7 +80,7 @@ public:
      *     @param error description if any
      *     @return 0 on success -1 if a xml-rpc/network error occurred
      */
-    int xmlrpc_replicate_log(int zone_id, bool& success, int& last,
+    int xmlrpc_replicate_log(int zone_id, bool& success, uint64_t& last,
             std::string& err);
 
     /**

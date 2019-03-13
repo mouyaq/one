@@ -226,7 +226,7 @@ public:
      */
     int get_next_index(int follower_id)
     {
-        std::map<int, unsigned int>::iterator it;
+        std::map<int, uint64_t>::iterator it;
         unsigned int _index = -1;
 
         pthread_mutex_lock(&mutex);
@@ -275,7 +275,7 @@ public:
 	 *    @param error describing error if any
      *    @return -1 if a XMl-RPC (network) error occurs, 0 otherwise
      */
-    int xmlrpc_request_vote(int follower_id, unsigned int lindex,
+    int xmlrpc_request_vote(int follower_id, uint64_t lindex,
             unsigned int lterm, bool& success, unsigned int& fterm,
             std::string& error);
 
@@ -408,11 +408,11 @@ private:
 
     HeartBeatManager   heartbeat_manager;
 
-    unsigned int commit;
+    uint64_t commit;
 
-    std::map<int, unsigned int> next;
+    std::map<int, uint64_t> next;
 
-    std::map<int, unsigned int> match;
+    std::map<int, uint64_t> match;
 
     std::map<int, std::string>  servers;
 

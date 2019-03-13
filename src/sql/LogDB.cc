@@ -28,8 +28,8 @@ const char * LogDB::table = "logdb";
 const char * LogDB::db_names = "log_index, term, sqlcmd, timestamp, fed_index, applied";
 
 const char * LogDB::db_bootstrap = "CREATE TABLE IF NOT EXISTS "
-    "logdb (log_index INTEGER PRIMARY KEY, term INTEGER, sqlcmd MEDIUMTEXT, "
-    "timestamp INTEGER, fed_index INTEGER, applied BOOLEAN)";
+    "logdb (log_index BIGINT PRIMARY KEY, term INTEGER, sqlcmd MEDIUMTEXT, "
+    "timestamp INTEGER, fed_index BIGINT, applied BOOLEAN)";
 
 /* -------------------------------------------------------------------------- */
 
@@ -68,15 +68,15 @@ int LogDBRecord::select_cb(void *nil, int num, char **values, char **names)
 
     std::string * _sql;
 
-    index = static_cast<unsigned int>(atoi(values[0]));
+    index = static_cast<long long int>(atoi(values[0]));
     term  = static_cast<unsigned int>(atoi(values[1]));
     zsql  = values[2];
 
     timestamp  = static_cast<unsigned int>(atoi(values[3]));
 
-    fed_index  = static_cast<unsigned int>(atoi(values[4]));
+    fed_index  = static_cast<long long int>(atoi(values[4]));
 
-    prev_index = static_cast<unsigned int>(atoi(values[5]));
+    prev_index = static_cast<long long int>(atoi(values[5]));
     prev_term  = static_cast<unsigned int>(atoi(values[6]));
 
     _sql = one_util::zlib_decompress(zsql, true);
@@ -104,11 +104,11 @@ int LogDBRecord::select_cb(void *nil, int num, char **values, char **names)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-LogDB::LogDB(SqlDB * _db, bool _solo, bool _cache, unsigned int _lret, unsigned int _lp):
+LogDB::LogDB(SqlDB * _db, bool _solo, bool _cache, uint64_t _lret, uint64_t _lp):
     solo(_solo), cache(_cache), db(_db), next_index(0), last_applied(-1), last_index(-1),
     last_term(-1), log_retention(_lret), limit_purge(_lp)
 {
-    int r, i;
+    uint64_t r, i;
 
     pthread_mutex_init(&mutex, 0);
 
@@ -134,40 +134,40 @@ LogDB::~LogDB()
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::setup_index(int& _last_applied, int& _last_index)
+int LogDB::setup_index(uint64_t& _last_applied, uint64_t& _last_index)
 {
     int rc = 0;
 
     std::ostringstream oss;
 
-    single_cb<int> cb;
+    single_cb<uint64_t> cb;
 
     LogDBRecord lr;
 
     _last_applied = 0;
-    _last_index   = -1;
+    _last_index   = UINT64_MAX;
 
     pthread_mutex_lock(&mutex);
 
     cb.set_callback(&_last_index);
 
-    oss << "SELECT MAX(log_index) FROM logdb";
+    oss << "SELECT MAX(log_index) FROM logdb WHERE log_index != -1";
 
     rc += db->exec_rd(oss, &cb);
 
-    cb.unset_callback();
-
-    if ( rc == 0 )
+    if ( rc == 0 && cb.get_affected_rows() != 0)
     {
         next_index = _last_index + 1;
         last_index = _last_index;
     }
 
+    cb.unset_callback();
+
     oss.str("");
 
     cb.set_callback(&_last_applied);
 
-    oss << "SELECT MAX(log_index) FROM logdb WHERE timestamp != 0";
+    oss << "SELECT MAX(log_index) FROM logdb WHERE applied = 1";
 
     rc += db->exec_rd(oss, &cb);
 
@@ -195,11 +195,11 @@ int LogDB::setup_index(int& _last_applied, int& _last_index)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::get_log_record(unsigned int index, LogDBRecord& lr)
+int LogDB::get_log_record(uint64_t index, LogDBRecord& lr)
 {
     ostringstream oss;
 
-    unsigned int prev_index = index - 1;
+    uint64_t prev_index = index - 1;
 
     if ( index == 0 )
     {
@@ -228,7 +228,7 @@ int LogDB::get_log_record(unsigned int index, LogDBRecord& lr)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-void LogDB::get_last_record_index(unsigned int& _i, unsigned int& _t)
+void LogDB::get_last_record_index(uint64_t& _i, unsigned int& _t)
 {
     pthread_mutex_lock(&mutex);
 
@@ -287,8 +287,8 @@ int LogDB::update_raft_state(std::string& raft_xml)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::insert(int index, int term, const std::string& sql, time_t tstamp,
-        int fed_index, bool replace)
+int LogDB::insert(uint64_t index, int term, const std::string& sql, time_t tstamp,
+        uint64_t fed_index, bool replace)
 {
     std::ostringstream oss;
 
@@ -323,7 +323,18 @@ int LogDB::insert(int index, int term, const std::string& sql, time_t tstamp,
 
     oss << " INTO " << table << " ("<< db_names <<") VALUES ("
         << index << "," << term << "," << "'" << sql_db << "'," << tstamp
-        << "," << fed_index << "," << applied << ")";
+        << ",";
+
+    if ( fed_index != UINT64_MAX )
+    {
+        oss << fed_index;
+    }
+    else
+    {
+        oss << "-1";
+    }
+
+    oss << "," << applied << ")";
 
     int rc = db->exec_wr(oss);
 
@@ -384,14 +395,14 @@ int LogDB::apply_log_record(LogDBRecord * lr)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::insert_log_record(unsigned int term, std::ostringstream& sql,
-        time_t timestamp, int fed_index)
+uint64_t LogDB::insert_log_record(uint64_t term, std::ostringstream& sql,
+        time_t timestamp, uint64_t fed_index)
 {
     pthread_mutex_lock(&mutex);
 
-    unsigned int index = next_index;
+    uint64_t index = next_index;
 
-    int _fed_index;
+    uint64_t _fed_index;
 
     if ( fed_index == 0 )
     {
@@ -423,7 +434,7 @@ int LogDB::insert_log_record(unsigned int term, std::ostringstream& sql,
 
     next_index++;
 
-    if ( fed_index != -1 )
+    if ( fed_index != UINT64_MAX )
     {
         fed_log.insert(_fed_index);
     }
@@ -436,8 +447,9 @@ int LogDB::insert_log_record(unsigned int term, std::ostringstream& sql,
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::insert_log_record(unsigned int index, unsigned int term,
-        std::ostringstream& sql, time_t timestamp, int fed_index, bool replace)
+int LogDB::insert_log_record(uint64_t index, unsigned int term,
+        std::ostringstream& sql, time_t timestamp, uint64_t fed_index,
+        bool replace)
 {
     int rc;
 
@@ -456,7 +468,7 @@ int LogDB::insert_log_record(unsigned int index, unsigned int term,
             next_index = last_index + 1;
         }
 
-        if ( fed_index != -1 )
+        if ( fed_index != UINT64_MAX )
         {
             fed_log.insert(fed_index);
         }
@@ -470,7 +482,7 @@ int LogDB::insert_log_record(unsigned int index, unsigned int term,
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::_exec_wr(ostringstream& cmd, int federated_index)
+int LogDB::_exec_wr(ostringstream& cmd, uint64_t federated)
 {
     int rc;
 
@@ -485,7 +497,7 @@ int LogDB::_exec_wr(ostringstream& cmd, int federated_index)
 
         if ( rc == 0 && Nebula::instance().is_federation_enabled() )
         {
-            insert_log_record(0, cmd, time(0), federated_index);
+            insert_log_record(0, cmd, time(0), federated);
 
             pthread_mutex_lock(&mutex);
 
@@ -510,9 +522,9 @@ int LogDB::_exec_wr(ostringstream& cmd, int federated_index)
     // -------------------------------------------------------------------------
     // Insert log entry in the database and replicate on followers
     // -------------------------------------------------------------------------
-    int rindex = insert_log_record(raftm->get_term(), cmd, 0, federated_index);
+    uint64_t rindex = insert_log_record(raftm->get_term(), cmd, 0, federated);
 
-    if ( rindex == -1 )
+    if ( rindex == UINT64_MAX )
     {
         return -1;
     }
@@ -523,7 +535,7 @@ int LogDB::_exec_wr(ostringstream& cmd, int federated_index)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::delete_log_records(unsigned int start_index)
+int LogDB::delete_log_records(uint64_t start_index)
 {
     std::ostringstream oss;
     int rc;
@@ -556,7 +568,7 @@ int LogDB::delete_log_records(unsigned int start_index)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::apply_log_records(unsigned int commit_index)
+int LogDB::apply_log_records(uint64_t commit_index)
 {
     pthread_mutex_lock(&mutex);
 
@@ -591,10 +603,10 @@ int LogDB::purge_log()
 
     empty_cb cb;
 
-    multiple_cb<std::vector, int> cb_info;
+    multiple_cb<std::vector, uint64_t> cb_info;
     single_cb<string> cb_min_idx;
-    std::vector<int> maxmin_i;
-    std::vector<int> maxmin_e;
+    std::vector<uint64_t> maxmin_i;
+    std::vector<uint64_t> maxmin_e;
     string min_idx;
 
     int rc  = 0;
@@ -724,7 +736,7 @@ int LogDB::purge_log()
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::replicate(int rindex)
+int LogDB::replicate(uint64_t rindex)
 {
     int rc;
 
@@ -770,7 +782,7 @@ void LogDB::build_federated_index()
 
     fed_log.clear();
 
-    set_cb<int> cb;
+    set_cb<uint64_t> cb;
 
     cb.set_callback(&fed_log);
 
@@ -784,15 +796,15 @@ void LogDB::build_federated_index()
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::last_federated()
+uint64_t LogDB::last_federated()
 {
     pthread_mutex_lock(&mutex);
 
-    int findex = -1;
+    uint64_t findex = -1;
 
     if ( !fed_log.empty() )
     {
-        set<int>::reverse_iterator rit;
+        set<uint64_t>::reverse_iterator rit;
 
         rit = fed_log.rbegin();
 
@@ -806,13 +818,13 @@ int LogDB::last_federated()
 
 /* -------------------------------------------------------------------------- */
 
-int LogDB::previous_federated(int i)
+uint64_t LogDB::previous_federated(uint64_t i)
 {
-    set<int>::iterator it;
+    set<uint64_t>::iterator it;
 
     pthread_mutex_lock(&mutex);
 
-    int findex = -1;
+    uint64_t findex = UINT64_MAX;
 
     it = fed_log.find(i);
 
@@ -828,13 +840,13 @@ int LogDB::previous_federated(int i)
 
 /* -------------------------------------------------------------------------- */
 
-int LogDB::next_federated(int i)
+uint64_t LogDB::next_federated(uint64_t i)
 {
-    set<int>::iterator it;
+    set<uint64_t>::iterator it;
 
     pthread_mutex_lock(&mutex);
 
-    int findex = -1;
+    uint64_t findex = UINT64_MAX;
 
     it = fed_log.find(i);
 

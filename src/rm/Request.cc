@@ -330,6 +330,9 @@ void Request::log_xmlrpc_value(const xmlrpc_c::value& v, std::ostringstream& oss
             oss << ", "
                 << static_cast<double>(xmlrpc_c::value_double(v));
             break;
+        case xmlrpc_c::value::TYPE_I8:
+            oss << ", " << static_cast<uint64_t>(xmlrpc_c::value_i8(v));
+            break;
         default:
             oss  << ", unknown param type";
             break;

@@ -387,7 +387,7 @@ void FedReplicaManager::replicate_failure(int zone_id, int last_zone)
 /* -------------------------------------------------------------------------- */
 
 int FedReplicaManager::xmlrpc_replicate_log(int zone_id, bool& success,
-        int& last, std::string& error)
+        uint64_t& last, std::string& error)
 {
     static const std::string replica_method = "one.zone.fedreplicate";
 
@@ -402,7 +402,7 @@ int FedReplicaManager::xmlrpc_replicate_log(int zone_id, bool& success,
         return -1;
     }
 
-    int prev_index = logdb->previous_federated(lr.index);
+    uint64_t prev_index = logdb->previous_federated(lr.index);
 
     // -------------------------------------------------------------------------
     // Get parameters to call append entries on follower
@@ -416,8 +416,8 @@ int FedReplicaManager::xmlrpc_replicate_log(int zone_id, bool& success,
     }
 
     replica_params.add(xmlrpc_c::value_string(xmlrpc_secret));
-    replica_params.add(xmlrpc_c::value_int(lr.index));
-    replica_params.add(xmlrpc_c::value_int(prev_index));
+    replica_params.add(xmlrpc_c::value_i8(lr.index));
+    replica_params.add(xmlrpc_c::value_i8(prev_index));
     replica_params.add(xmlrpc_c::value_string(lr.sql));
 
     // -------------------------------------------------------------------------
@@ -435,12 +435,12 @@ int FedReplicaManager::xmlrpc_replicate_log(int zone_id, bool& success,
 
         if ( success ) //values[2] = error code (string)
         {
-            last = xmlrpc_c::value_int(values[1]);
+            last = xmlrpc_c::value_i8(values[1]);
         }
         else
         {
             error = xmlrpc_c::value_string(values[1]);
-            last  = xmlrpc_c::value_int(values[3]);
+            last  = xmlrpc_c::value_i8(values[3]);
         }
     }
     else

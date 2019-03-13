@@ -300,7 +300,8 @@ void RaftManager::add_server(int follower_id, const std::string& endpoint)
 
 	LogDB * logdb = Nebula::instance().get_logdb();
 
-	unsigned int log_index, log_term;
+	uint64_t log_index;
+    unsigned int log_term;
 
     logdb->get_last_record_index(log_index, log_term);
 
@@ -379,7 +380,7 @@ extern "C" void * reconciling_thread(void *arg)
     LogDB * logdb    = nd.get_logdb();
     RaftManager * rm = nd.get_raftm();
 
-    int * index = static_cast<int *>(arg);
+    uint64_t * index = static_cast<uint64_t *>(arg);
 
     NebulaLog::log("RCM", Log::INFO, "Replicating log to followers");
 
@@ -410,7 +411,7 @@ void RaftManager::leader()
     std::map<int, std::string>::iterator it;
     std::vector<int> _follower_ids;
 
-    int index, _applied, _next_index;
+    uint64_t index, _applied, _next_index;
 
     std::map<int, std::string> _servers;
 
@@ -508,7 +509,7 @@ void RaftManager::leader()
 
 void RaftManager::follower(unsigned int _term)
 {
-    int lapplied, lindex;
+    uint64_t lapplied, lindex;
 
     Nebula& nd    = Nebula::instance();
     LogDB * logdb = nd.get_logdb();
@@ -591,13 +592,13 @@ void RaftManager::replicate_log(ReplicaRequest * request)
     //Count servers that need to replicate this record
     int to_commit = num_servers / 2;
 
-    std::map<int, unsigned int>::iterator it;
+    std::map<int, uint64_t>::iterator it;
 
     for (it = next.begin(); it != next.end() ; ++it)
     {
-        int rindex = request->index();
+        uint64_t rindex = request->index();
 
-        if ( rindex < (int) it->second )
+        if ( rindex < (uint64_t) it->second )
         {
             to_commit--;
         }
@@ -635,13 +636,14 @@ void RaftManager::replicate_success(int follower_id)
 {
     std::map<int, ReplicaRequest *>::iterator it;
 
-    std::map<int, unsigned int>::iterator next_it;
-    std::map<int, unsigned int>::iterator match_it;
+    std::map<int, uint64_t>::iterator next_it;
+    std::map<int, uint64_t>::iterator match_it;
 
     Nebula& nd    = Nebula::instance();
     LogDB * logdb = nd.get_logdb();
 
-    unsigned int db_lindex, db_lterm;
+    uint64_t db_lindex;
+    unsigned int db_lterm;
 
     logdb->get_last_record_index(db_lindex, db_lterm);
 
@@ -656,7 +658,7 @@ void RaftManager::replicate_success(int follower_id)
         return;
     }
 
-    unsigned int replicated_index = next_it->second;
+    uint64_t replicated_index = next_it->second;
 
     match_it->second = replicated_index;
     next_it->second  = replicated_index + 1;
@@ -680,7 +682,7 @@ void RaftManager::replicate_success(int follower_id)
 
 void RaftManager::replicate_failure(int follower_id)
 {
-    std::map<int, unsigned int>::iterator next_it;
+    std::map<int, uint64_t>::iterator next_it;
 
     pthread_mutex_lock(&mutex);
 
@@ -886,7 +888,8 @@ void RaftManager::timer_action(const ActionRequest& ar)
 
 void RaftManager::request_vote()
 {
-    unsigned int lindex, lterm, fterm, _term;
+    unsigned int lterm, fterm, _term;
+    uint64_t lindex;
     int _server_id;
 
     std::map<int, std::string> _servers;
@@ -1037,7 +1040,7 @@ void RaftManager::request_vote()
 
         oss.str("");
 
-        oss << "No leader found, starting new election in " << ms << "ms"; 
+        oss << "No leader found, starting new election in " << ms << "ms";
         NebulaLog::log("RCM", Log::INFO, oss);
 
         set_timeout(ms, etimeout);
@@ -1054,7 +1057,7 @@ int RaftManager::xmlrpc_replicate_log(int follower_id, LogDBRecord * lr,
 		bool& success, unsigned int& fterm, std::string& error)
 {
 	int _server_id;
-	int _commit;
+	uint64_t _commit;
     int _term;
     std::string xmlrpc_secret;
 
@@ -1099,13 +1102,13 @@ int RaftManager::xmlrpc_replicate_log(int follower_id, LogDBRecord * lr,
 
     replica_params.add(xmlrpc_c::value_string(xmlrpc_secret));
     replica_params.add(xmlrpc_c::value_int(_server_id));
-    replica_params.add(xmlrpc_c::value_int(_commit));
+    replica_params.add(xmlrpc_c::value_i8(_commit));
     replica_params.add(xmlrpc_c::value_int(_term));
-    replica_params.add(xmlrpc_c::value_int(lr->index));
+    replica_params.add(xmlrpc_c::value_i8(lr->index));
     replica_params.add(xmlrpc_c::value_int(lr->term));
-    replica_params.add(xmlrpc_c::value_int(lr->prev_index));
+    replica_params.add(xmlrpc_c::value_i8(lr->prev_index));
     replica_params.add(xmlrpc_c::value_int(lr->prev_term));
-    replica_params.add(xmlrpc_c::value_int(lr->fed_index));
+    replica_params.add(xmlrpc_c::value_i8(lr->fed_index));
     replica_params.add(xmlrpc_c::value_string(lr->sql));
 
     // -------------------------------------------------------------------------
@@ -1147,7 +1150,7 @@ int RaftManager::xmlrpc_replicate_log(int follower_id, LogDBRecord * lr,
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int RaftManager::xmlrpc_request_vote(int follower_id, unsigned int lindex,
+int RaftManager::xmlrpc_request_vote(int follower_id, uint64_t lindex,
         unsigned int lterm, bool& success, unsigned int& fterm,
         std::string& error)
 {
@@ -1196,7 +1199,7 @@ int RaftManager::xmlrpc_request_vote(int follower_id, unsigned int lindex,
     replica_params.add(xmlrpc_c::value_string(xmlrpc_secret));
     replica_params.add(xmlrpc_c::value_int(_term));
     replica_params.add(xmlrpc_c::value_int(_server_id));
-    replica_params.add(xmlrpc_c::value_int(lindex));
+    replica_params.add(xmlrpc_c::value_i8(lindex));
     replica_params.add(xmlrpc_c::value_int(lterm));
 
     // -------------------------------------------------------------------------
@@ -1243,8 +1246,8 @@ std::string& RaftManager::to_xml(std::string& raft_xml)
     Nebula& nd    = Nebula::instance();
     LogDB * logdb = nd.get_logdb();
 
-    unsigned int lindex, lterm;
-
+    unsigned int lterm;
+    uint64_t lindex;
     std::ostringstream oss;
 
     logdb->get_last_record_index(lindex, lterm);
@@ -1292,9 +1295,10 @@ std::string& RaftManager::to_xml(std::string& raft_xml)
 
 void RaftManager::reset_index(int follower_id)
 {
-    std::map<int, unsigned int>::iterator next_it;
+    std::map<int, uint64_t>::iterator next_it;
 
-	unsigned int log_index, log_term;
+	unsigned int log_term;
+    uint64_t log_index;
 
 	LogDB * logdb = Nebula::instance().get_logdb();
 

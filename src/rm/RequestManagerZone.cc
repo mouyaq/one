@@ -297,15 +297,15 @@ void ZoneReplicateLog::request_execute(xmlrpc_c::paramList const& paramList,
 
     RaftManager * raftm = nd.get_raftm();
 
-    int leader_id     = xmlrpc_c::value_int(paramList.getInt(1));
-    int leader_commit = xmlrpc_c::value_int(paramList.getInt(2));
+    int leader_id            = xmlrpc_c::value_int(paramList.getInt(1));
+    uint64_t leader_commit   = xmlrpc_c::value_i8(paramList.getI8(2));
     unsigned int leader_term = xmlrpc_c::value_int(paramList.getInt(3));
 
-    unsigned int index      = xmlrpc_c::value_int(paramList.getInt(4));
+    uint64_t index          = xmlrpc_c::value_i8(paramList.getI8(4));
     unsigned int term       = xmlrpc_c::value_int(paramList.getInt(5));
-    unsigned int prev_index = xmlrpc_c::value_int(paramList.getInt(6));
+    uint64_t prev_index     = xmlrpc_c::value_i8(paramList.getI8(6));
     unsigned int prev_term  = xmlrpc_c::value_int(paramList.getInt(7));
-    unsigned int fed_index  = xmlrpc_c::value_int(paramList.getInt(8));
+    uint64_t fed_index      = xmlrpc_c::value_i8(paramList.getI8(8));
 
     string sql = xmlrpc_c::value_string(paramList.getString(9));
 
@@ -370,7 +370,8 @@ void ZoneReplicateLog::request_execute(xmlrpc_c::paramList const& paramList,
     if ( index == 0 && prev_index == 0 && term == 0 && prev_term == 0 &&
          sql.empty() )
     {
-        unsigned int lindex, lterm;
+        uint64_t lindex;
+        unsigned int lterm;
 
         logdb->get_last_record_index(lindex, lterm);
 
@@ -464,12 +465,13 @@ void ZoneVoteRequest::request_execute(xmlrpc_c::paramList const& paramList,
     unsigned int candidate_term  = xmlrpc_c::value_int(paramList.getInt(1));
     unsigned int candidate_id    = xmlrpc_c::value_int(paramList.getInt(2));
 
-    unsigned int candidate_log_index = xmlrpc_c::value_int(paramList.getInt(3));
+    uint64_t candidate_log_index = xmlrpc_c::value_i8(paramList.getI8(3));
     unsigned int candidate_log_term  = xmlrpc_c::value_int(paramList.getInt(4));
 
     unsigned int current_term = raftm->get_term();
 
-    unsigned int log_index, log_term;
+    uint64_t log_index;
+    unsigned int log_term;
 
     logdb->get_last_record_index(log_index, log_term);
 
