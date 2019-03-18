@@ -302,13 +302,8 @@ void RaftManager::add_server(int follower_id, const std::string& endpoint)
 
 	LogDB * logdb = Nebula::instance().get_logdb();
 
-<<<<<<< HEAD
-	uint64_t log_index;
-    unsigned int log_term;
-=======
 	unsigned int log_term;
     uint64_t log_index;
->>>>>>> aa74268f8... more index size changes
 
     logdb->get_last_record_index(log_index, log_term);
 
@@ -609,13 +604,8 @@ void RaftManager::replicate_log(ReplicaRequest * request)
         {
             to_commit--;
         }
-<<<<<<< HEAD
         else
         {
-=======
-		 else if ( rindex == (uint64_t) it->second )
-		 {
->>>>>>> aa74268f8... more index size changes
             replica_manager.replicate(it->first);
         }
     }
@@ -654,13 +644,8 @@ void RaftManager::replicate_success(int follower_id)
     Nebula& nd    = Nebula::instance();
     LogDB * logdb = nd.get_logdb();
 
-<<<<<<< HEAD
-    uint64_t db_lindex;
-    unsigned int db_lterm;
-=======
 	unsigned int db_lterm;
     uint64_t db_lindex;
->>>>>>> aa74268f8... more index size changes
 
     logdb->get_last_record_index(db_lindex, db_lterm);
 
@@ -1265,10 +1250,6 @@ std::string& RaftManager::to_xml(std::string& raft_xml)
 
     unsigned int lterm;
     uint64_t lindex;
-<<<<<<< HEAD
-=======
-
->>>>>>> aa74268f8... more index size changes
     std::ostringstream oss;
 
     logdb->get_last_record_index(lindex, lterm);
