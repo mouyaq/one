@@ -27,6 +27,8 @@
 /* -------------------------------------------------------------------------- */
 const time_t RaftManager::timer_period_ms = 50;
 
+const string RaftManager::raft_state_name = "RAFT_STATE";
+
 static void set_timeout(long long ms, struct timespec& timeout)
 {
     std::lldiv_t d;
@@ -68,20 +70,20 @@ RaftManager::RaftManager(int id, const VectorAttribute * leader_hook_mad,
     //   - term
     // -------------------------------------------------------------------------
 
-    if ( logdb->get_raft_state(raft_xml) != 0 )
+    if ( logdb->get_raft_state(raft_state_name, raft_xml) != 0 )
     {
         std::ostringstream bsr;
 
-        bsr << "bootstrap state";
+        bsr << "<MESSAGE>bootstrap state</MESSAGE>";
 
-        logdb->insert_log_record(-1, -1, bsr, 0, -1, false);
+        init_raft_state(bsr.str());
 
         raft_state.replace("TERM", 0);
         raft_state.replace("VOTEDFOR", -1);
 
         raft_state.to_xml(raft_xml);
 
-        logdb->update_raft_state(raft_xml);
+        logdb->update_raft_state(raft_state_name, raft_xml);
 
         votedfor = -1;
         term     = 0;
@@ -568,7 +570,7 @@ void RaftManager::follower(unsigned int _term)
 
     if (!raft_state_xml.empty())
     {
-        logdb->update_raft_state(raft_state_xml);
+        logdb->update_raft_state(raft_state_name, raft_state_xml);
     }
 }
 
@@ -777,7 +779,7 @@ int RaftManager::update_votedfor(int _votedfor)
 
     pthread_mutex_unlock(&mutex);
 
-    logdb->update_raft_state(raft_state_xml);
+    logdb->update_raft_state(raft_state_name, raft_state_xml);
 
     return 0;
 }
@@ -950,7 +952,7 @@ void RaftManager::request_vote()
 
         pthread_mutex_unlock(&mutex);
 
-        logdb->update_raft_state(raft_state_xml);
+        logdb->update_raft_state(raft_state_name, raft_state_xml);
 
         logdb->get_last_record_index(lindex, lterm);
 
@@ -1031,7 +1033,7 @@ void RaftManager::request_vote()
 
         pthread_mutex_unlock(&mutex);
 
-        logdb->update_raft_state(raft_state_xml);
+        logdb->update_raft_state(raft_state_name, raft_state_xml);
 
         srand(_server_id+1);
 
@@ -1315,3 +1317,15 @@ void RaftManager::reset_index(int follower_id)
 
     pthread_mutex_unlock(&mutex);
 }
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+int RaftManager::init_raft_state(const std::string& raft_xml)
+{
+    string error;
+    Nebula& nd = Nebula::instance();
+
+    return nd.insert_sys_attribute(raft_state_name, raft_xml, error);
+}
+

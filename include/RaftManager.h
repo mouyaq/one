@@ -370,6 +370,11 @@ private:
     Template raft_state;
 
     /**
+     * Value for name column in system_attributes table for raft state.
+     */
+    static const string raft_state_name;
+
+    /**
      *  After becoming a leader it is replicating and applying any pending
      *  log entry.
      */
@@ -465,6 +470,11 @@ private:
      *  Makes this server leader, and start replica threads
      */
     void leader();
+
+    /**
+     * Init the raft state status row.
+     */
+    int init_raft_state(const std::string& raft_xml);
 };
 
 #endif /*RAFT_MANAGER_H_*/

@@ -28,7 +28,7 @@ const char * LogDB::table = "logdb";
 const char * LogDB::db_names = "log_index, term, sqlcmd, timestamp, fed_index, applied";
 
 const char * LogDB::db_bootstrap = "CREATE TABLE IF NOT EXISTS "
-    "logdb (log_index BIGINT PRIMARY KEY, term INTEGER, sqlcmd MEDIUMTEXT, "
+    "logdb (log_index BIGINT UNSIGNED PRIMARY KEY, term INTEGER, sqlcmd MEDIUMTEXT, "
     "timestamp INTEGER, fed_index BIGINT, applied BOOLEAN)";
 
 /* -------------------------------------------------------------------------- */
@@ -241,13 +241,13 @@ void LogDB::get_last_record_index(uint64_t& _i, unsigned int& _t)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::get_raft_state(std::string &raft_xml)
+int LogDB::get_raft_state(std::string name, std::string &raft_xml)
 {
     ostringstream oss;
 
     single_cb<std::string> cb;
 
-    oss << "SELECT sqlcmd FROM logdb WHERE log_index = -1 AND term = -1";
+    oss << "SELECT body FROM system_attributes WHERE name = '" << name << "'";
 
     cb.set_callback(&raft_xml);
 
@@ -266,7 +266,7 @@ int LogDB::get_raft_state(std::string &raft_xml)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int LogDB::update_raft_state(std::string& raft_xml)
+int LogDB::update_raft_state(std::string name, std::string& raft_xml)
 {
     std::ostringstream oss;
 
@@ -277,7 +277,7 @@ int LogDB::update_raft_state(std::string& raft_xml)
         return -1;
     }
 
-    oss << "UPDATE logdb SET sqlcmd ='" << sql_db << "' WHERE log_index = -1";
+    oss << "UPDATE system_attributes SET body ='" << sql_db << "' WHERE name = '" << name << "'";
 
     db->free_str(sql_db);
 
