@@ -184,7 +184,7 @@ int RaftReplicaThread::replicate()
 
     unsigned int term  = raftm->get_term();
 
-    int next_index = raftm->get_next_index(follower_id);
+    uint64_t next_index = raftm->get_next_index(follower_id);
 
     if ( logdb->get_log_record(next_index, lr) != 0 )
     {

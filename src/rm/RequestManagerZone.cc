@@ -370,12 +370,17 @@ void ZoneReplicateLog::request_execute(xmlrpc_c::paramList const& paramList,
     if ( index == 0 && prev_index == 0 && term == 0 && prev_term == 0 &&
          sql.empty() )
     {
+<<<<<<< HEAD
         uint64_t lindex;
         unsigned int lterm;
+=======
+        unsigned int lterm;
+        uint64_t lindex;
+>>>>>>> aa74268f8... more index size changes
 
         logdb->get_last_record_index(lindex, lterm);
 
-        unsigned int new_commit = raftm->update_commit(leader_commit, lindex);
+        uint64_t new_commit = raftm->update_commit(leader_commit, lindex);
 
         logdb->apply_log_records(new_commit);
 
@@ -465,13 +470,22 @@ void ZoneVoteRequest::request_execute(xmlrpc_c::paramList const& paramList,
     unsigned int candidate_term  = xmlrpc_c::value_int(paramList.getInt(1));
     unsigned int candidate_id    = xmlrpc_c::value_int(paramList.getInt(2));
 
+<<<<<<< HEAD
     uint64_t candidate_log_index = xmlrpc_c::value_i8(paramList.getI8(3));
+=======
+    uint64_t candidate_log_index = xmlrpc_c::value_int(paramList.getInt(3));
+>>>>>>> aa74268f8... more index size changes
     unsigned int candidate_log_term  = xmlrpc_c::value_int(paramList.getInt(4));
 
     unsigned int current_term = raftm->get_term();
 
+<<<<<<< HEAD
     uint64_t log_index;
     unsigned int log_term;
+=======
+    unsigned int log_term;
+    uint64_t log_index;
+>>>>>>> aa74268f8... more index size changes
 
     logdb->get_last_record_index(log_index, log_term);
 

@@ -224,10 +224,14 @@ public:
      *    @param follower server id
      *    @return -1 on failure, the next index if success
      */
-    int get_next_index(int follower_id)
+    uint64_t get_next_index(int follower_id)
     {
         std::map<int, uint64_t>::iterator it;
+<<<<<<< HEAD
         unsigned int _index = -1;
+=======
+        uint64_t _index = -1;
+>>>>>>> aa74268f8... more index size changes
 
         pthread_mutex_lock(&mutex);
 
