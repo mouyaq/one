@@ -170,7 +170,7 @@ public:
      */
     int exec_wr(ostringstream& cmd)
     {
-        return _exec_wr(cmd, 0);
+        return _exec_wr(cmd, UINT64_MAX);
     }
 
     int exec_wr(ostringstream& cmd, Callbackable* obj)

@@ -58,14 +58,14 @@ FedReplicaManager::~FedReplicaManager()
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int FedReplicaManager::apply_log_record(int index, int prev, 
+int FedReplicaManager::apply_log_record(uint64_t index, uint64_t prev, 
         const std::string& sql)
 {
     int rc;
 
     pthread_mutex_lock(&mutex);
 
-    int last_index = logdb->last_federated();
+    uint64_t last_index = logdb->last_federated();
 
     if ( prev != last_index )
     {
@@ -291,7 +291,7 @@ int FedReplicaManager::get_next_record(int zone_id, std::string& zedp,
     zedp  = zs->endpoint;
 
     //Initialize next index for the zone
-    if ( zs->next == -1 )
+    if ( zs->next == UINT64_MAX )
     {
         zs->next= logdb->last_federated();
     }
@@ -346,7 +346,7 @@ void FedReplicaManager::replicate_success(int zone_id)
 
     zs->next = logdb->next_federated(zs->next);
 
-    if ( zs->next != -1 )
+    if ( zs->next != UINT64_MAX )
     {
         ReplicaManager::replicate(zone_id);
     }
@@ -373,7 +373,7 @@ void FedReplicaManager::replicate_failure(int zone_id, int last_zone)
             zs->next = logdb->next_federated(zs->last);
         }
 
-        if ( zs->next != -1 )
+        if ( zs->next != UINT64_MAX )
         {
             ReplicaManager::replicate(zone_id);
         }

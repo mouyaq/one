@@ -68,15 +68,25 @@ int LogDBRecord::select_cb(void *nil, int num, char **values, char **names)
 
     std::string * _sql;
 
-    index = static_cast<long long int>(atoi(values[0]));
+    std::istringstream iss;
+
+    iss.str(string(values[0]));
+    iss >> index;
+    iss.clear();
+
     term  = static_cast<unsigned int>(atoi(values[1]));
     zsql  = values[2];
 
     timestamp  = static_cast<unsigned int>(atoi(values[3]));
 
-    fed_index  = static_cast<long long int>(atoi(values[4]));
+    iss.str(string(values[4]));
+    iss >> fed_index;
+    iss.clear();
 
-    prev_index = static_cast<long long int>(atoi(values[5]));
+    iss.str(string(values[5]));
+    iss >> prev_index;
+    iss.clear();
+
     prev_term  = static_cast<unsigned int>(atoi(values[6]));
 
     _sql = one_util::zlib_decompress(zsql, true);
@@ -151,7 +161,7 @@ int LogDB::setup_index(uint64_t& _last_applied, uint64_t& _last_index)
 
     cb.set_callback(&_last_index);
 
-    oss << "SELECT MAX(log_index) FROM logdb WHERE log_index != -1";
+    oss << "SELECT MAX(log_index) FROM logdb";
 
     rc += db->exec_rd(oss, &cb);
 

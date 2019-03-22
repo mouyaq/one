@@ -95,7 +95,7 @@ public:
      *  Allocate a replica request fot the given index.
      *    @param rindex of the record for the request
      */
-	void replicate_allocate(int rindex)
+	void replicate_allocate(uint64_t rindex)
 	{
 		requests.allocate(rindex);
 	}
@@ -145,9 +145,9 @@ public:
         return _term;
     }
 
-    unsigned int get_commit()
+    uint64_t get_commit()
     {
-        unsigned int _commit;
+        uint64_t _commit;
 
         pthread_mutex_lock(&mutex);
 
@@ -164,7 +164,7 @@ public:
 	 *  @param index of the last record inserted in the database
 	 *  @return the updated commit index
 	 */
-	unsigned int update_commit(unsigned int leader_commit, unsigned int index);
+	uint64_t update_commit(uint64_t leader_commit, uint64_t index);
 
     /**
      *  Evaluates a vote request. It is granted if no vote has been granted in

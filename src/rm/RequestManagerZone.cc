@@ -444,7 +444,7 @@ void ZoneReplicateLog::request_execute(xmlrpc_c::paramList const& paramList,
         return;
     }
 
-    unsigned int new_commit = raftm->update_commit(leader_commit, index);
+    uint64_t new_commit = raftm->update_commit(leader_commit, index);
 
     logdb->apply_log_records(new_commit);
 
@@ -465,7 +465,7 @@ void ZoneVoteRequest::request_execute(xmlrpc_c::paramList const& paramList,
     unsigned int candidate_term  = xmlrpc_c::value_int(paramList.getInt(1));
     unsigned int candidate_id    = xmlrpc_c::value_int(paramList.getInt(2));
 
-    uint64_t candidate_log_index = xmlrpc_c::value_int(paramList.getInt(3));
+    uint64_t candidate_log_index = xmlrpc_c::value_i8(paramList.getI8(3));
     unsigned int candidate_log_term  = xmlrpc_c::value_int(paramList.getInt(4));
 
     unsigned int current_term = raftm->get_term();

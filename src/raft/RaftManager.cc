@@ -726,10 +726,9 @@ void RaftManager::update_last_heartbeat(int _leader_id)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-unsigned int RaftManager::update_commit(unsigned int leader_commit,
-        unsigned int index)
+uint64_t RaftManager::update_commit(uint64_t leader_commit, uint64_t index)
 {
-    unsigned int _commit;
+    uint64_t _commit;
 
     pthread_mutex_lock(&mutex);
 

@@ -56,7 +56,7 @@ public:
      *    @param sql command to apply to DB
      *    @return 0 on success, last_index if missing records, -1 on DB error
      */
-    int apply_log_record(int index, int prev, const std::string& sql);
+    int apply_log_record(uint64_t index, uint64_t prev, const std::string& sql);
 
     /**
      *  Record was successfully replicated on zone, increase next index and
@@ -167,8 +167,8 @@ private:
 
     struct ZoneServers
     {
-        ZoneServers(int z, unsigned int l, const std::string& s):
-            zone_id(z), endpoint(s), next(l), last(-1){};
+        ZoneServers(int z, uint64_t l, const std::string& s):
+            zone_id(z), endpoint(s), next(l), last(UINT64_MAX){};
 
         ~ZoneServers(){};
 
@@ -176,9 +176,9 @@ private:
 
         std::string  endpoint;
 
-        int next;
+        uint64_t next;
 
-        int last;
+        uint64_t last;
     };
 
     std::map<int, ZoneServers *> zones;
