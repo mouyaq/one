@@ -29,7 +29,7 @@ const char * LogDB::db_names = "log_index, term, sqlcmd, timestamp, fed_index, a
 
 const char * LogDB::db_bootstrap = "CREATE TABLE IF NOT EXISTS "
     "logdb (log_index BIGINT UNSIGNED PRIMARY KEY, term INTEGER, sqlcmd MEDIUMTEXT, "
-    "timestamp INTEGER, fed_index BIGINT, applied BOOLEAN)";
+    "timestamp INTEGER, fed_index BIGINT UNSIGNED, applied BOOLEAN)";
 
 /* -------------------------------------------------------------------------- */
 
@@ -333,18 +333,7 @@ int LogDB::insert(uint64_t index, int term, const std::string& sql, time_t tstam
 
     oss << " INTO " << table << " ("<< db_names <<") VALUES ("
         << index << "," << term << "," << "'" << sql_db << "'," << tstamp
-        << ",";
-
-    if ( fed_index != UINT64_MAX )
-    {
-        oss << fed_index;
-    }
-    else
-    {
-        oss << "-1";
-    }
-
-    oss << "," << applied << ")";
+        << "," << fed_index << "," << applied << ")";
 
     int rc = db->exec_wr(oss);
 
@@ -640,8 +629,8 @@ int LogDB::purge_log()
 
     oss.str("");
     oss << "  SELECT MIN(i.log_index) FROM ("
-        << "    SELECT log_index FROM logdb WHERE fed_index = -1 AND"
-        << "      applied = 1 AND log_index >= 0 "
+        << "    SELECT log_index FROM logdb WHERE fed_index = " << UINT64_MAX
+        << "      AND applied = 1 AND log_index >= 0 "
         << "      ORDER BY log_index DESC LIMIT " << log_retention
         << "  ) AS i";
 
@@ -655,7 +644,7 @@ int LogDB::purge_log()
 
     oss.str("");
     oss << "DELETE FROM logdb WHERE applied = 1 AND log_index >= 0 "
-        << "AND fed_index = -1 AND log_index < " << min_idx;
+        << "AND fed_index = " << UINT64_MAX << " AND log_index < " << min_idx;
 
     if ( db->limit_support() )
     {
@@ -703,8 +692,8 @@ int LogDB::purge_log()
 
     oss.str("");
     oss << "  SELECT MIN(i.log_index) FROM ("
-        << "    SELECT log_index FROM logdb WHERE fed_index != -1 AND"
-        << "      applied = 1 AND log_index >= 0 "
+        << "    SELECT log_index FROM logdb WHERE fed_index != " << UINT64_MAX
+        << "      AND applied = 1 AND log_index >= 0 "
         << "      ORDER BY log_index DESC LIMIT " << log_retention
         << "  ) AS i";
 
@@ -718,7 +707,7 @@ int LogDB::purge_log()
 
     oss.str("");
     oss << "DELETE FROM logdb WHERE applied = 1 AND log_index >= 0 "
-        << "AND fed_index != -1 AND log_index < " << min_idx;
+        << "AND fed_index != " << UINT64_MAX << " AND log_index < " << min_idx;
 
     if ( db->limit_support() )
     {
@@ -796,7 +785,7 @@ void LogDB::build_federated_index()
 
     cb.set_callback(&fed_log);
 
-    oss << "SELECT fed_index FROM " << table << " WHERE fed_index != -1 ";
+    oss << "SELECT fed_index FROM " << table << " WHERE fed_index != " << UINT64_MAX;
 
     db->exec_rd(oss, &cb);
 

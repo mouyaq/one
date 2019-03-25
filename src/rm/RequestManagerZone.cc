@@ -570,13 +570,13 @@ void ZoneReplicateFedLog::request_execute(xmlrpc_c::paramList const& paramList,
 
     FedReplicaManager * frm = nd.get_frm();
 
-    int index  = xmlrpc_c::value_int(paramList.getInt(1));
-    int prev   = xmlrpc_c::value_int(paramList.getInt(2));
+    uint64_t index  = xmlrpc_c::value_i8(paramList.getI8(1));
+    uint64_t prev   = xmlrpc_c::value_i8(paramList.getI8(2));
     string sql = xmlrpc_c::value_string(paramList.getString(3));
 
     if (!att.is_oneadmin())
     {
-        att.resp_id  = -1;
+        att.replication_idx  = UINT64_MAX;
 
         failure_response(AUTHORIZATION, att);
         return;
@@ -585,7 +585,7 @@ void ZoneReplicateFedLog::request_execute(xmlrpc_c::paramList const& paramList,
     if ( nd.is_cache() )
     {
         att.resp_msg = "Server is in cache mode.";
-        att.resp_id  = -1;
+        att.replication_idx  = UINT64_MAX;
 
         failure_response(ACTION, att);
         return;
@@ -598,9 +598,9 @@ void ZoneReplicateFedLog::request_execute(xmlrpc_c::paramList const& paramList,
         NebulaLog::log("ReM", Log::ERROR, oss);
 
         att.resp_msg = oss.str();
-        att.resp_id  = -1;
+        att.replication_idx  = UINT64_MAX;
 
-        failure_response(ACTION, att);
+        failure_response(REPLICATION, att);
         return;
     }
 
@@ -611,28 +611,28 @@ void ZoneReplicateFedLog::request_execute(xmlrpc_c::paramList const& paramList,
         NebulaLog::log("ReM", Log::INFO, oss);
 
         att.resp_msg = oss.str();
-        att.resp_id  = - 1;
+        att.replication_idx  = UINT64_MAX;
 
-        failure_response(ACTION, att);
+        failure_response(REPLICATION, att);
         return;
     }
 
-    int rc = frm->apply_log_record(index, prev, sql);
+    uint64_t rc = frm->apply_log_record(index, prev, sql);
 
     if ( rc == 0 )
     {
         success_response(index, att);
     }
-    else if ( rc < 0 )
+    else if ( rc == UINT64_MAX )
     {
         oss << "Error replicating log entry " << index << " in zone";
 
         NebulaLog::log("ReM", Log::INFO, oss);
 
         att.resp_msg = oss.str();
-        att.resp_id  = index;
+        att.replication_idx  = index;
 
-        failure_response(ACTION, att);
+        failure_response(REPLICATION, att);
     }
     else // rc == last_index in log
     {
@@ -641,9 +641,9 @@ void ZoneReplicateFedLog::request_execute(xmlrpc_c::paramList const& paramList,
         NebulaLog::log("ReM", Log::INFO, oss);
 
         att.resp_msg = oss.str();
-        att.resp_id  = rc;
+        att.replication_idx  = rc;
 
-        failure_response(ACTION, att);
+        failure_response(REPLICATION, att);
     }
 
     return;

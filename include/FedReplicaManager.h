@@ -56,7 +56,7 @@ public:
      *    @param sql command to apply to DB
      *    @return 0 on success, last_index if missing records, -1 on DB error
      */
-    int apply_log_record(uint64_t index, uint64_t prev, const std::string& sql);
+    uint64_t apply_log_record(uint64_t index, uint64_t prev, const std::string& sql);
 
     /**
      *  Record was successfully replicated on zone, increase next index and
@@ -70,7 +70,7 @@ public:
      *  send any pending records.
      *    @param zone_id
      */
-    void replicate_failure(int zone_id, int zone_last);
+    void replicate_failure(int zone_id, uint64_t zone_last);
 
     /**
      *  XML-RPC API call to replicate a log entry on slaves

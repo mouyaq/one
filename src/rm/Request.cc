@@ -731,6 +731,7 @@ void Request::failure_response(ErrorCode ec, const string& str_val,
     arrayData.push_back(xmlrpc_c::value_string(str_val));
     arrayData.push_back(xmlrpc_c::value_int(ec));
     arrayData.push_back(xmlrpc_c::value_int(att.resp_id));
+    arrayData.push_back(xmlrpc_c::value_i8(att.replication_idx));
 
     xmlrpc_c::value_array arrayresult(arrayData);
 
@@ -812,6 +813,9 @@ string Request::failure_message(ErrorCode ec, RequestAttributes& att)
                oss << " [" << att.resp_id << "].";
             }
             break;
+        case REPLICATION:
+            oss << "Error replicating log entry.";
+            break;
     }
 
     return oss.str();
@@ -866,6 +870,23 @@ void Request::success_response(bool val, RequestAttributes& att)
 
     arrayData.push_back(xmlrpc_c::value_boolean(true));
     arrayData.push_back(xmlrpc_c::value_boolean(val));
+    arrayData.push_back(xmlrpc_c::value_int(SUCCESS));
+
+
+    xmlrpc_c::value_array arrayresult(arrayData);
+
+    *(att.retval) = arrayresult;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+void Request::success_response(uint64_t val, RequestAttributes& att)
+{
+    vector<xmlrpc_c::value> arrayData;
+
+    arrayData.push_back(xmlrpc_c::value_boolean(true));
+    arrayData.push_back(xmlrpc_c::value_i8(val));
     arrayData.push_back(xmlrpc_c::value_int(SUCCESS));
 
 

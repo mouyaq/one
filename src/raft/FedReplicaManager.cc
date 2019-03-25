@@ -58,10 +58,10 @@ FedReplicaManager::~FedReplicaManager()
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int FedReplicaManager::apply_log_record(uint64_t index, uint64_t prev, 
+uint64_t FedReplicaManager::apply_log_record(uint64_t index, uint64_t prev,
         const std::string& sql)
 {
-    int rc;
+    uint64_t rc;
 
     pthread_mutex_lock(&mutex);
 
@@ -80,7 +80,7 @@ int FedReplicaManager::apply_log_record(uint64_t index, uint64_t prev,
     if ( logdb->exec_federated_wr(oss, index) != 0 )
     {
         pthread_mutex_unlock(&mutex);
-        return -1;
+        return UINT64_MAX;
     }
 
     pthread_mutex_unlock(&mutex);
@@ -154,7 +154,7 @@ void FedReplicaManager::update_zones(std::vector<int>& zone_ids)
 
     pthread_mutex_lock(&mutex);
 
-    int last_index = logdb->last_federated();
+    uint64_t last_index = logdb->last_federated();
 
     zones.clear();
 
@@ -308,6 +308,11 @@ int FedReplicaManager::get_next_record(int zone_id, std::string& zedp,
         }
     }
 
+    std::ostringstream dbg;
+    dbg << "get_log_record(" << zs->next << ")";
+    NebulaLog::log("TEST",Log::INFO,dbg.str());
+
+
     int rc = logdb->get_log_record(zs->next, lr);
 
     if ( rc == -1 )
@@ -356,7 +361,7 @@ void FedReplicaManager::replicate_success(int zone_id)
 
 /* -------------------------------------------------------------------------- */
 
-void FedReplicaManager::replicate_failure(int zone_id, int last_zone)
+void FedReplicaManager::replicate_failure(int zone_id, uint64_t last_zone)
 {
     pthread_mutex_lock(&mutex);
 
@@ -366,7 +371,7 @@ void FedReplicaManager::replicate_failure(int zone_id, int last_zone)
     {
         ZoneServers * zs = it->second;
 
-        if ( last_zone >= 0 )
+        if ( last_zone != UINT64_MAX )
         {
             zs->last = last_zone;
 
@@ -440,7 +445,7 @@ int FedReplicaManager::xmlrpc_replicate_log(int zone_id, bool& success,
         else
         {
             error = xmlrpc_c::value_string(values[1]);
-            last  = xmlrpc_c::value_i8(values[3]);
+            last  = xmlrpc_c::value_i8(values[4]);
         }
     }
     else
