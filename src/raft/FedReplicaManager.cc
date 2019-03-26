@@ -301,17 +301,12 @@ int FedReplicaManager::get_next_record(int zone_id, std::string& zedp,
     {
         zs->next = logdb->next_federated(zs->next);
 
-        if ( zs->last == zs->next ) //no new records
+        if ( zs->next == UINT64_MAX ) //no new records
         {
             pthread_mutex_unlock(&mutex);
-            return -1;
+            return -2;
         }
     }
-
-    std::ostringstream dbg;
-    dbg << "get_log_record(" << zs->next << ")";
-    NebulaLog::log("TEST",Log::INFO,dbg.str());
-
 
     int rc = logdb->get_log_record(zs->next, lr);
 
@@ -402,9 +397,11 @@ int FedReplicaManager::xmlrpc_replicate_log(int zone_id, bool& success,
 
     LogDBRecord lr;
 
-    if ( get_next_record(zone_id, zedp, lr, error) != 0 )
+    int rc = get_next_record(zone_id, zedp, lr, error);
+
+    if ( rc != 0 )
     {
-        return -1;
+        return rc;
     }
 
     uint64_t prev_index = logdb->previous_federated(lr.index);
