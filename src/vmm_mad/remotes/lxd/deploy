@@ -43,8 +43,6 @@ container = Container.new_from_xml(xml, client)
 #   - Not exists. Creates new container in LXD.
 # ------------------------------------------------------------------------------
 if Container.exist?(container.name, client)
-    OpenNebula.log_info('Overriding container')
-
     config  = container.config
     devices = container.devices
 
@@ -53,7 +51,7 @@ if Container.exist?(container.name, client)
     err_msg = 'A container with the same ID is already running'
     raise err_msg if container.status == 'Running'
 
-    container.config = config
+    OpenNebula.log_info('Overriding container')
 
     container.config = config
     container.devices = devices
