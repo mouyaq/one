@@ -49,13 +49,12 @@ container = Container.get(vm_name, xml, client) # :status => "Sucess"
 # Fixer call
 container = Container.get(vm_name, xml, client) unless %w[Running Stopped].include? container.status
 
-if !container.wild?
-    container.stop(:force => true) if container.status == 'Running'
-
-    e = 'Failed to dismantle container storage'
-    raise "#{e}\n#{container}" unless container.setup_storage('unmap')
-
-    container.delete
-end
-
+container.stop(:force => true) if container.status == 'Running'
 container.vnc('stop')
+
+return if container.wild?
+
+raise 'Failed to dismantle container storage' unless \
+container.setup_storage('unmap')
+
+container.delete
