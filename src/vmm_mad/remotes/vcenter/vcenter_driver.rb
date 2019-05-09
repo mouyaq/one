@@ -84,6 +84,7 @@ require 'virtual_machine'
 require 'network'
 require 'file_helper'
 require 'vm_folder'
+require 'vmm_importer'
 
 CHECK_REFS = true
 
