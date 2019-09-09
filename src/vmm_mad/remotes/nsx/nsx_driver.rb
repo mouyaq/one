@@ -52,6 +52,9 @@ require 'logical_switch'
 require 'opaque_network'
 require 'transport_zone'
 require 'virtual_wire'
+require 'distributed_firewall'
+require 'dfw_nsxt'
+require 'dfw_nsxv'
 
 # NSX Driver module
 module NSXDriver
