@@ -78,8 +78,11 @@ module NSXDriver
 
         # METHODS
 
-        def check_response(response, code)
-            response.code.to_i == code
+        def check_response(response, codes_array)
+            codes_array.each do |code|
+                return true if response.code.to_i == code
+            end
+            false
         end
 
         def self.nsx_pass(nsx_pass_enc)
@@ -112,7 +115,8 @@ module NSXDriver
             rescue StandardError => e
                 raise e
             end
-            return Nokogiri::XML response.body if check_response(response, 200)
+            return Nokogiri::XML response.body \
+                if check_response(response, [200])
         end
 
         # Return: id of the created object
@@ -125,7 +129,7 @@ module NSXDriver
               :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
                   https.request(request)
               end
-            return response.body if check_response(response, 201)
+            return response.body if check_response(response, [200, 201])
         end
 
         def get_json(url)
@@ -145,7 +149,7 @@ module NSXDriver
                 raise e
             end
             return JSON.parse(response.body) \
-                if check_response(response, 200)
+                if check_response(response, [200])
         end
 
         # Return: id of the created object
@@ -159,7 +163,7 @@ module NSXDriver
                   https.request(request)
               end
             return JSON.parse(response.body)['id'] \
-                if check_response(response, 201)
+                if check_response(response, [200, 201])
         end
 
         def delete(url, header)
@@ -170,7 +174,7 @@ module NSXDriver
               :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
                   https.request(request)
               end
-            check_response(response, 200)
+            check_response(response, [200])
         end
 
         def get_token(url, header)
