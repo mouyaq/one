@@ -120,10 +120,22 @@ module NSXDriver
         end
 
         # Return: id of the created object
-        def post_xml(url, ls_data)
+        def post_xml(url, data)
             uri = URI.parse(url)
             request = Net::HTTP::Post.new(uri.request_uri, HEADER_XML)
-            request.body = ls_data
+            request.body = data
+            request.basic_auth(@nsx_user, @nsx_password)
+            response = Net::HTTP.start(uri.host, uri.port, :use_ssl => true,
+              :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
+                  https.request(request)
+              end
+            return response.body if check_response(response, [200, 201])
+        end
+
+        def put_xml(url, data)
+            uri = URI.parse(url)
+            request = Net::HTTP::Put.new(uri.request_uri, HEADER_XML)
+            request.body = data
             request.basic_auth(@nsx_user, @nsx_password)
             response = Net::HTTP.start(uri.host, uri.port, :use_ssl => true,
               :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
@@ -153,10 +165,23 @@ module NSXDriver
         end
 
         # Return: id of the created object
-        def post_json(url, ls_data)
+        def post_json(url, data)
             uri = URI.parse(url)
             request = Net::HTTP::Post.new(uri.request_uri, HEADER_JSON)
-            request.body = ls_data
+            request.body = data
+            request.basic_auth(@nsx_user, @nsx_password)
+            response = Net::HTTP.start(uri.host, uri.port, :use_ssl => true,
+              :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
+                  https.request(request)
+              end
+            return JSON.parse(response.body)['id'] \
+                if check_response(response, [200, 201])
+        end
+
+        def put_json(url, data)
+            uri = URI.parse(url)
+            request = Net::HTTP::Put.new(uri.request_uri, HEADER_JSON)
+            request.body = data
             request.basic_auth(@nsx_user, @nsx_password)
             response = Net::HTTP.start(uri.host, uri.port, :use_ssl => true,
               :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
