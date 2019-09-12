@@ -119,22 +119,43 @@ module NSXDriver
                 if check_response(response, [200])
         end
 
-        # Return: id of the created object
-        def post_xml(url, data)
+        def get_full_response(url, header)
             uri = URI.parse(url)
-            request = Net::HTTP::Post.new(uri.request_uri, HEADER_XML)
+            request = Net::HTTP::Get.new(uri.request_uri, header)
+            request.basic_auth(@nsx_user, @nsx_password)
+            begin
+                response = Net::HTTP
+                           .start(uri.host,
+                                  uri.port,
+                                  :use_ssl => true,
+                                  :verify_mode => OpenSSL::SSL::VERIFY_NONE)\
+                                  do |https|
+                                      https.request(request)
+                                  end
+            rescue StandardError => e
+                raise e
+            end
+            return response \
+                if check_response(response, [200])
+        end
+
+        # Return: id of the created object
+        def post_xml(url, data, header = HEADER_XML)
+            uri = URI.parse(url)
+            request = Net::HTTP::Post.new(uri.request_uri, header)
             request.body = data
             request.basic_auth(@nsx_user, @nsx_password)
             response = Net::HTTP.start(uri.host, uri.port, :use_ssl => true,
               :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
                   https.request(request)
               end
-            return response.body if check_response(response, [200, 201])
+            return Nokogiri::XML(response.body) \
+                if check_response(response, [200, 201])
         end
 
-        def put_xml(url, data)
+        def put_xml(url, data, header = HEADER_XML)
             uri = URI.parse(url)
-            request = Net::HTTP::Put.new(uri.request_uri, HEADER_XML)
+            request = Net::HTTP::Put.new(uri.request_uri, header)
             request.body = data
             request.basic_auth(@nsx_user, @nsx_password)
             response = Net::HTTP.start(uri.host, uri.port, :use_ssl => true,
@@ -191,6 +212,12 @@ module NSXDriver
                 if check_response(response, [200, 201])
         end
 
+        # Delete http request
+        # Params:
+        # - url: [String]
+        # - header: [Hash]
+        # Return:
+        # - [boolean] true if delete correctly or false if not
         def delete(url, header)
             uri = URI.parse(url)
             request = Net::HTTP::Delete.new(uri.request_uri, header)
@@ -199,7 +226,7 @@ module NSXDriver
               :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |https|
                   https.request(request)
               end
-            check_response(response, [200])
+            check_response(response, [200, 204])
         end
 
         def get_token(url, header)
