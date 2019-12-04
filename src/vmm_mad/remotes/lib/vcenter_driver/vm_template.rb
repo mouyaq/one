@@ -572,6 +572,27 @@ class Template
                         nic_tmp << "VCENTER_ADDITIONALS_IP6=\"#{nic[:ipv6_additionals]}\",\n" if nic[:ipv6_additionals]
                     end
 
+                      # If type is NSX we need to update values
+                      if one_vn['//TEMPLATE/VCENTER_PORTGROUP_TYPE'] == "Distributed Port Group"
+                          host_id = @vi_client.instance_variable_get '@host_id'
+                          nsx_client = NSXDriver::NSXClient.new_from_id(host_id)
+                          nsx_net = NSXDriver::VirtualWire
+                                    .new_from_name(nsx_client, one_vn['NAME'])
+                          nic_tmp << "NSX_ID=\"#{nsx_net.ls_id}\"\n"
+                          nic_tmp << "NSX_VNI=\"#{nsx_net.ls_vni}\"\n"
+                          nic_tmp << "NSX_TZ_ID=\"#{nsx_net.tz_id}\"\n"
+                      end
+
+                    if one_vn['//TEMPLATE/VCENTER_PORTGROUP_TYPE'] == VCenterDriver::Network::NETWORK_TYPE_NSXT
+                        host_id = @vi_client.instance_variable_get '@host_id'
+                        nsx_client = NSXDriver::NSXClient.new_from_id(host_id)
+                        nsx_net = NSXDriver::OpaqueNetwork
+                                  .new_from_name(nsx_client, one_vn['NAME'])
+                        nic_tmp << "NSX_ID=\"#{nsx_net.ls_id}\"\n"
+                        nic_tmp << "NSX_VNI=\"#{nsx_net.ls_vni}\"\n"
+                        nic_tmp << "NSX_TZ_ID=\"#{nsx_net.tz_id}\"\n"
+                    end
+
                     nic_tmp << "OPENNEBULA_MANAGED=\"NO\"\n"
                     nic_tmp << "]\n"
                     nic_info << nic_tmp
